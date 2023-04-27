@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+### Added
+
+- `tracing` feature, that enabled trait `UpdateHandlerExt` that instruments `UpdateHandler` with a custom `tracing::Span`
+
 ## 0.12.2 - 2023-02-15
 
 ### Fixed
