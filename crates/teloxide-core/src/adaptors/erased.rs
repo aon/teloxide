@@ -402,15 +402,11 @@ trait ErasableRequester<'a> {
         &self,
         chat_id: Recipient,
         message_id: MessageId,
-        latitude: f64,
-        longitude: f64,
     ) -> ErasedRequest<'a, StopMessageLiveLocation, Self::Err>;
 
     fn stop_message_live_location_inline(
         &self,
         inline_message_id: String,
-        latitude: f64,
-        longitude: f64,
     ) -> ErasedRequest<'a, StopMessageLiveLocationInline, Self::Err>;
 
     fn send_venue(
@@ -632,31 +628,31 @@ trait ErasableRequester<'a> {
     fn edit_forum_topic(
         &self,
         chat_id: Recipient,
-        message_thread_id: i32,
+        message_thread_id: ThreadId,
     ) -> ErasedRequest<'a, EditForumTopic, Self::Err>;
 
     fn close_forum_topic(
         &self,
         chat_id: Recipient,
-        message_thread_id: i32,
+        message_thread_id: ThreadId,
     ) -> ErasedRequest<'a, CloseForumTopic, Self::Err>;
 
     fn reopen_forum_topic(
         &self,
         chat_id: Recipient,
-        message_thread_id: i32,
+        message_thread_id: ThreadId,
     ) -> ErasedRequest<'a, ReopenForumTopic, Self::Err>;
 
     fn delete_forum_topic(
         &self,
         chat_id: Recipient,
-        message_thread_id: i32,
+        message_thread_id: ThreadId,
     ) -> ErasedRequest<'a, DeleteForumTopic, Self::Err>;
 
     fn unpin_all_forum_topic_messages(
         &self,
         chat_id: Recipient,
-        message_thread_id: i32,
+        message_thread_id: ThreadId,
     ) -> ErasedRequest<'a, UnpinAllForumTopicMessages, Self::Err>;
 
     fn edit_general_forum_topic(
@@ -1064,21 +1060,15 @@ where
         &self,
         chat_id: Recipient,
         message_id: MessageId,
-        latitude: f64,
-        longitude: f64,
     ) -> ErasedRequest<'a, StopMessageLiveLocation, Self::Err> {
-        Requester::stop_message_live_location(self, chat_id, message_id, latitude, longitude)
-            .erase()
+        Requester::stop_message_live_location(self, chat_id, message_id).erase()
     }
 
     fn stop_message_live_location_inline(
         &self,
         inline_message_id: String,
-        latitude: f64,
-        longitude: f64,
     ) -> ErasedRequest<'a, StopMessageLiveLocationInline, Self::Err> {
-        Requester::stop_message_live_location_inline(self, inline_message_id, latitude, longitude)
-            .erase()
+        Requester::stop_message_live_location_inline(self, inline_message_id).erase()
     }
 
     fn send_venue(
@@ -1378,7 +1368,7 @@ where
     fn edit_forum_topic(
         &self,
         chat_id: Recipient,
-        message_thread_id: i32,
+        message_thread_id: ThreadId,
     ) -> ErasedRequest<'a, EditForumTopic, Self::Err> {
         Requester::edit_forum_topic(self, chat_id, message_thread_id).erase()
     }
@@ -1386,7 +1376,7 @@ where
     fn close_forum_topic(
         &self,
         chat_id: Recipient,
-        message_thread_id: i32,
+        message_thread_id: ThreadId,
     ) -> ErasedRequest<'a, CloseForumTopic, Self::Err> {
         Requester::close_forum_topic(self, chat_id, message_thread_id).erase()
     }
@@ -1394,7 +1384,7 @@ where
     fn reopen_forum_topic(
         &self,
         chat_id: Recipient,
-        message_thread_id: i32,
+        message_thread_id: ThreadId,
     ) -> ErasedRequest<'a, ReopenForumTopic, Self::Err> {
         Requester::reopen_forum_topic(self, chat_id, message_thread_id).erase()
     }
@@ -1402,7 +1392,7 @@ where
     fn delete_forum_topic(
         &self,
         chat_id: Recipient,
-        message_thread_id: i32,
+        message_thread_id: ThreadId,
     ) -> ErasedRequest<'a, DeleteForumTopic, Self::Err> {
         Requester::delete_forum_topic(self, chat_id, message_thread_id).erase()
     }
@@ -1410,7 +1400,7 @@ where
     fn unpin_all_forum_topic_messages(
         &self,
         chat_id: Recipient,
-        message_thread_id: i32,
+        message_thread_id: ThreadId,
     ) -> ErasedRequest<'a, UnpinAllForumTopicMessages, Self::Err> {
         Requester::unpin_all_forum_topic_messages(self, chat_id, message_thread_id).erase()
     }

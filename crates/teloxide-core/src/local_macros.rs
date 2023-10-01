@@ -372,26 +372,26 @@ macro_rules! impl_payload {
 }
 
 macro_rules! download_forward {
-    ($l:lifetime $T:ident $S:ty {$this:ident => $inner:expr}) => {
-        impl<$l, $T: $crate::net::Download<$l>> $crate::net::Download<$l> for $S {
-            type Err = <$T as $crate::net::Download<$l>>::Err;
+    ($T:ident $S:ty {$this:ident => $inner:expr}) => {
+        impl<$T: $crate::net::Download> $crate::net::Download for $S {
+            type Err<'dst> = <$T as $crate::net::Download>::Err<'dst>;
 
-            type Fut = <$T as $crate::net::Download<$l>>::Fut;
+            type Fut<'dst> = <$T as $crate::net::Download>::Fut<'dst>;
 
-            fn download_file(
+            fn download_file<'dst>(
                 &self,
                 path: &str,
-                destination: &'w mut (dyn tokio::io::AsyncWrite
-                             + core::marker::Unpin
-                             + core::marker::Send),
-            ) -> Self::Fut {
+                destination: &'dst mut (dyn tokio::io::AsyncWrite
+                               + core::marker::Unpin
+                               + core::marker::Send),
+            ) -> Self::Fut<'dst> {
                 let $this = self;
                 ($inner).download_file(path, destination)
             }
 
-            type StreamErr = <$T as $crate::net::Download<$l>>::StreamErr;
+            type StreamErr = <$T as $crate::net::Download>::StreamErr;
 
-            type Stream = <$T as $crate::net::Download<$l>>::Stream;
+            type Stream = <$T as $crate::net::Download>::Stream;
 
             fn download_file_stream(&self, path: &str) -> Self::Stream {
                 let $this = self;
@@ -588,17 +588,17 @@ macro_rules! requester_forward {
     (@method stop_message_live_location $body:ident $ty:ident) => {
         type StopMessageLiveLocation = $ty![StopMessageLiveLocation];
 
-        fn stop_message_live_location<C>(&self, chat_id: C, message_id: MessageId, latitude: f64, longitude: f64) -> Self::StopMessageLiveLocation where C: Into<Recipient> {
+        fn stop_message_live_location<C>(&self, chat_id: C, message_id: MessageId) -> Self::StopMessageLiveLocation where C: Into<Recipient> {
             let this = self;
-            $body!(stop_message_live_location this (chat_id: C, message_id: MessageId, latitude: f64, longitude: f64))
+            $body!(stop_message_live_location this (chat_id: C, message_id: MessageId))
         }
     };
     (@method stop_message_live_location_inline $body:ident $ty:ident) => {
         type StopMessageLiveLocationInline = $ty![StopMessageLiveLocationInline];
 
-        fn stop_message_live_location_inline<I>(&self, inline_message_id: I, latitude: f64, longitude: f64) -> Self::StopMessageLiveLocationInline where I: Into<String> {
+        fn stop_message_live_location_inline<I>(&self, inline_message_id: I) -> Self::StopMessageLiveLocationInline where I: Into<String> {
             let this = self;
-            $body!(stop_message_live_location_inline this (inline_message_id: I, latitude: f64, longitude: f64))
+            $body!(stop_message_live_location_inline this (inline_message_id: I))
         }
     };
     (@method send_venue $body:ident $ty:ident) => {
@@ -931,41 +931,41 @@ macro_rules! requester_forward {
     (@method edit_forum_topic $body:ident $ty:ident) => {
         type EditForumTopic = $ty![EditForumTopic];
 
-        fn edit_forum_topic<C>(&self, chat_id: C, message_thread_id: i32) -> Self::EditForumTopic where C: Into<Recipient> {
+        fn edit_forum_topic<C>(&self, chat_id: C, message_thread_id: ThreadId) -> Self::EditForumTopic where C: Into<Recipient> {
             let this = self;
-            $body!(edit_forum_topic this (chat_id: C, message_thread_id: i32))
+            $body!(edit_forum_topic this (chat_id: C, message_thread_id: ThreadId))
         }
     };
     (@method close_forum_topic $body:ident $ty:ident) => {
         type CloseForumTopic = $ty![CloseForumTopic];
 
-        fn close_forum_topic<C>(&self, chat_id: C, message_thread_id: i32) -> Self::CloseForumTopic where C: Into<Recipient> {
+        fn close_forum_topic<C>(&self, chat_id: C, message_thread_id: ThreadId) -> Self::CloseForumTopic where C: Into<Recipient> {
             let this = self;
-            $body!(close_forum_topic this (chat_id: C, message_thread_id: i32))
+            $body!(close_forum_topic this (chat_id: C, message_thread_id: ThreadId))
         }
     };
     (@method reopen_forum_topic $body:ident $ty:ident) => {
         type ReopenForumTopic = $ty![ReopenForumTopic];
 
-        fn reopen_forum_topic<C>(&self, chat_id: C, message_thread_id: i32) -> Self::ReopenForumTopic where C: Into<Recipient> {
+        fn reopen_forum_topic<C>(&self, chat_id: C, message_thread_id: ThreadId) -> Self::ReopenForumTopic where C: Into<Recipient> {
             let this = self;
-            $body!(reopen_forum_topic this (chat_id: C, message_thread_id: i32))
+            $body!(reopen_forum_topic this (chat_id: C, message_thread_id: ThreadId))
         }
     };
     (@method delete_forum_topic $body:ident $ty:ident) => {
         type DeleteForumTopic = $ty![DeleteForumTopic];
 
-        fn delete_forum_topic<C>(&self, chat_id: C, message_thread_id: i32) -> Self::DeleteForumTopic where C: Into<Recipient> {
+        fn delete_forum_topic<C>(&self, chat_id: C, message_thread_id: ThreadId) -> Self::DeleteForumTopic where C: Into<Recipient> {
             let this = self;
-            $body!(delete_forum_topic this (chat_id: C, message_thread_id: i32))
+            $body!(delete_forum_topic this (chat_id: C, message_thread_id: ThreadId))
         }
     };
     (@method unpin_all_forum_topic_messages $body:ident $ty:ident) => {
         type UnpinAllForumTopicMessages = $ty![UnpinAllForumTopicMessages];
 
-        fn unpin_all_forum_topic_messages<C>(&self, chat_id: C, message_thread_id: i32) -> Self::UnpinAllForumTopicMessages where C: Into<Recipient> {
+        fn unpin_all_forum_topic_messages<C>(&self, chat_id: C, message_thread_id: ThreadId) -> Self::UnpinAllForumTopicMessages where C: Into<Recipient> {
             let this = self;
-            $body!(unpin_all_forum_topic_messages this (chat_id: C, message_thread_id: i32))
+            $body!(unpin_all_forum_topic_messages this (chat_id: C, message_thread_id: ThreadId))
         }
     };
     (@method edit_general_forum_topic $body:ident $ty:ident) => {
@@ -1333,6 +1333,8 @@ macro_rules! requester_forward {
 }
 
 #[test]
+// waffle: efficiency is not important here, and I don't want to rewrite this
+#[allow(clippy::format_collect)]
 fn codegen_requester_forward() {
     use crate::codegen::{
         add_hidden_preamble,

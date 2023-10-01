@@ -4,7 +4,7 @@ use crate::{
 };
 
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, quote_spanned};
 use syn::DeriveInput;
 
 pub(crate) fn bot_commands_impl(input: DeriveInput) -> Result<TokenStream> {
@@ -28,7 +28,7 @@ pub(crate) fn bot_commands_impl(input: DeriveInput) -> Result<TokenStream> {
 
     let type_name = &input.ident;
     let fn_descriptions = impl_descriptions(&var_info, &command_enum);
-    let fn_parse = impl_parse(&var_info, &var_init);
+    let fn_parse = impl_parse(&var_info, &var_init, &command_enum.command_separator);
     let fn_commands = impl_commands(&var_info);
 
     let trait_impl = quote! {
@@ -45,7 +45,7 @@ pub(crate) fn bot_commands_impl(input: DeriveInput) -> Result<TokenStream> {
 fn impl_commands(infos: &[Command]) -> proc_macro2::TokenStream {
     let commands = infos.iter().filter(|command| command.description_is_enabled()).map(|command| {
         let c = command.get_prefixed_command();
-        let d = command.description.as_deref().unwrap_or_default();
+        let d = command.description().unwrap_or_default();
         quote! { BotCommand::new(#c,#d) }
     });
 
@@ -61,12 +61,22 @@ fn impl_descriptions(infos: &[Command], global: &CommandEnum) -> proc_macro2::To
     let command_descriptions = infos
         .iter()
         .filter(|command| command.description_is_enabled())
-        .map(|Command { prefix, name, description, ..}| {
-            let description = description.clone().unwrap_or_default();
+        .map(|command @ Command { prefix, name, ..}| {
+            let description = command.description().unwrap_or_default();
             quote! { CommandDescription { prefix: #prefix, command: #name, description: #description } }
         });
 
-    let global_description = match global.description.as_deref() {
+    let warnings = infos.iter().filter_map(|command| command.deprecated_description_off_span()).map(|span| {
+        quote_spanned! {  span =>
+            const _: () = {
+                #[deprecated(note="\n`description = \"off\"` is deprecated, use `hide` instead")]
+                struct Deprecated;
+                _ = Deprecated;
+            };
+        }
+    });
+
+    let global_description = match global.description.as_ref().map(|(d, _)| d) {
         Some(gd) => quote! { .global_description(#gd) },
         None => quote! {},
     };
@@ -75,6 +85,8 @@ fn impl_descriptions(infos: &[Command], global: &CommandEnum) -> proc_macro2::To
         fn descriptions() -> teloxide::utils::command::CommandDescriptions<'static> {
             use teloxide::utils::command::{CommandDescriptions, CommandDescription};
             use std::borrow::Cow;
+
+            #(#warnings)*
 
             CommandDescriptions::new(&[
                 #(#command_descriptions),*
@@ -87,6 +99,7 @@ fn impl_descriptions(infos: &[Command], global: &CommandEnum) -> proc_macro2::To
 fn impl_parse(
     infos: &[Command],
     variants_initialization: &[proc_macro2::TokenStream],
+    command_separator: &str,
 ) -> proc_macro2::TokenStream {
     let matching_values = infos.iter().map(|c| c.get_prefixed_command());
 
@@ -98,7 +111,7 @@ fn impl_parse(
 
               // 2 is used to only split once (=> in two parts),
               // we only need to split the command and the rest of arguments.
-              let mut words = s.splitn(2, ' ');
+              let mut words = s.splitn(2, #command_separator);
 
               // Unwrap: split iterators always have at least one item
               let mut full_command = words.next().unwrap().split('@');

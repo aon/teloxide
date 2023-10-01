@@ -90,7 +90,7 @@ pub use teloxide_macros::BotCommands;
 ///  2. `#[command(prefix = "prefix")]`
 /// Change a prefix for all commands (the default is `/`).
 ///
-///  3. `#[command(description = "description")]`
+///  3. `#[command(description = "description")]` and `/// description`
 /// Add a summary description of commands before all commands.
 ///
 ///  4. `#[command(parse_with = "parser")]`
@@ -155,6 +155,30 @@ pub use teloxide_macros::BotCommands;
 /// # }
 /// ```
 ///
+/// 6. `#[command(command_separator = "sep")]`
+/// Specify separator between command and args. Default is a space character.
+///
+/// ## Example
+/// ```
+/// # #[cfg(feature = "macros")] {
+/// use teloxide::utils::command::BotCommands;
+///
+/// #[derive(BotCommands, PartialEq, Debug)]
+/// #[command(
+///     rename_rule = "lowercase",
+///     parse_with = "split",
+///     separator = "_",
+///     command_separator = "_"
+/// )]
+/// enum Command {
+///     Nums(u8, u16, i32),
+/// }
+///
+/// let command = Command::parse("/nums_1_32_5", "").unwrap();
+/// assert_eq!(command, Command::Nums(1, 32, 5));
+/// # }
+/// ```
+///
 /// # Variant attributes
 /// All variant attributes override the corresponding `enum` attributes.
 ///
@@ -167,14 +191,16 @@ pub use teloxide_macros::BotCommands;
 /// Rename one command to `name` (literal renaming; do not confuse with
 /// `rename_rule`).
 ///
-///  3. `#[command(description = "description")]`
-/// Give your command a description. Write `"off"` for `"description"` to hide a
-/// command.
+///  3. `#[command(description = "description")]` and `/// description`
+/// Give your command a description. It will be shown in the help message.
 ///
 ///  4. `#[command(parse_with = "parser")]`
 /// Parse arguments of one command with a given parser. `parser` must be a
 /// function of the signature `fn(String) -> Result<Tuple, ParseError>`, where
 /// `Tuple` corresponds to the variant's arguments.
+///
+///  5. `#[command(hide)]`
+/// Hide a command from the help message. It will still be parsed.
 ///
 /// ## Example
 /// ```

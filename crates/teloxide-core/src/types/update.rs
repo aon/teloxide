@@ -12,6 +12,7 @@ use crate::types::{
 /// [The official docs](https://core.telegram.org/bots/api#update).
 ///
 /// [object]: https://core.telegram.org/bots/api#available-types
+#[serde_with_macros::skip_serializing_none]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Update {
     /// The update‘s unique identifier. Update identifiers start from a certain
@@ -22,114 +23,21 @@ pub struct Update {
     /// week, then identifier of the next update will be chosen randomly
     /// instead of sequentially.
     #[serde(rename = "update_id")]
-    pub id: i32,
+    pub id: UpdateId,
 
     #[serde(flatten)]
     pub kind: UpdateKind,
 }
 
-impl Update {
-    // FIXME: add mentioned_users -> impl Iterator<&User>
-
-    /// Returns the user that performed the action that caused this update, if
-    /// known.
-    ///
-    /// This is generally the `from` field (except for `PollAnswer` where it's
-    /// `user` and `Poll` with `Error` which don't have such field at all).
-    #[must_use]
-    pub fn from(&self) -> Option<&User> {
-        use UpdateKind::*;
-
-        let from = match &self.kind {
-            Message(m) | EditedMessage(m) | ChannelPost(m) | EditedChannelPost(m) => m.from()?,
-
-            CallbackQuery(query) => &query.from,
-            ChosenInlineResult(chosen) => &chosen.from,
-            InlineQuery(query) => &query.from,
-            ShippingQuery(query) => &query.from,
-            PreCheckoutQuery(query) => &query.from,
-            PollAnswer(answer) => &answer.user,
-
-            MyChatMember(m) | ChatMember(m) => &m.from,
-            ChatJoinRequest(r) => &r.from,
-
-            Poll(_) | Error(_) => return None,
-        };
-
-        Some(from)
-    }
-
-    /// Returns all users that are "contained" in this `Update` structure.
-    ///
-    /// This might be useful to track information about users.
-    ///
-    /// Note that this function may return quite a few users as it scans
-    /// replies, pinned messages, message entities, "via bot" fields and more.
-    /// Also note that this function can return duplicate users.
-    pub fn mentioned_users(&self) -> impl Iterator<Item = &User> {
-        use either::Either::{Left, Right};
-        use std::iter::{empty, once};
-
-        let i0 = Left;
-        let i1 = |x| Right(Left(x));
-        let i2 = |x| Right(Right(Left(x)));
-        let i3 = |x| Right(Right(Right(Left(x))));
-        let i4 = |x| Right(Right(Right(Right(Left(x)))));
-        let i5 = |x| Right(Right(Right(Right(Right(Left(x))))));
-        let i6 = |x| Right(Right(Right(Right(Right(Right(x))))));
-
-        match &self.kind {
-            UpdateKind::Message(message)
-            | UpdateKind::EditedMessage(message)
-            | UpdateKind::ChannelPost(message)
-            | UpdateKind::EditedChannelPost(message) => i0(message.mentioned_users()),
-
-            UpdateKind::InlineQuery(query) => i1(once(&query.from)),
-            UpdateKind::ChosenInlineResult(query) => i1(once(&query.from)),
-            UpdateKind::CallbackQuery(query) => i2(query.mentioned_users()),
-            UpdateKind::ShippingQuery(query) => i1(once(&query.from)),
-            UpdateKind::PreCheckoutQuery(query) => i1(once(&query.from)),
-            UpdateKind::Poll(poll) => i3(poll.mentioned_users()),
-
-            UpdateKind::PollAnswer(answer) => i1(once(&answer.user)),
-
-            UpdateKind::MyChatMember(member) | UpdateKind::ChatMember(member) => {
-                i4(member.mentioned_users())
-            }
-            UpdateKind::ChatJoinRequest(request) => i5(request.mentioned_users()),
-            UpdateKind::Error(_) => i6(empty()),
-        }
-    }
-
-    /// Returns the chat in which is update has happened, if any.
-    #[must_use]
-    pub fn chat(&self) -> Option<&Chat> {
-        use UpdateKind::*;
-
-        let chat = match &self.kind {
-            Message(m) | EditedMessage(m) | ChannelPost(m) | EditedChannelPost(m) => &m.chat,
-            CallbackQuery(q) => &q.message.as_ref()?.chat,
-            ChatMember(m) => &m.chat,
-            MyChatMember(m) => &m.chat,
-            ChatJoinRequest(c) => &c.chat,
-
-            InlineQuery(_)
-            | ChosenInlineResult(_)
-            | ShippingQuery(_)
-            | PreCheckoutQuery(_)
-            | Poll(_)
-            | PollAnswer(_)
-            | Error(_) => return None,
-        };
-
-        Some(chat)
-    }
-
-    #[deprecated(note = "renamed to `from`", since = "0.10.0")]
-    pub fn user(&self) -> Option<&User> {
-        self.from()
-    }
-}
+/// An identifier of a telegram update.
+///
+/// See [`Update::id`] for more information.
+#[derive(Clone, Copy)]
+#[derive(Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct UpdateId(pub u32);
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum UpdateKind {
@@ -208,6 +116,138 @@ pub enum UpdateKind {
     /// **Note that deserialize implementation always returns an empty value**,
     /// teloxide fills in the data when doing deserialization.
     Error(Value),
+}
+
+impl Update {
+    /// Returns the user that performed the action that caused this update, if
+    /// known.
+    ///
+    /// This is generally the `from` field (except for `PollAnswer` where it's
+    /// `user` and `Poll` with `Error` which don't have such field at all).
+    #[must_use]
+    pub fn from(&self) -> Option<&User> {
+        use UpdateKind::*;
+
+        let from = match &self.kind {
+            Message(m) | EditedMessage(m) | ChannelPost(m) | EditedChannelPost(m) => m.from()?,
+
+            CallbackQuery(query) => &query.from,
+            ChosenInlineResult(chosen) => &chosen.from,
+            InlineQuery(query) => &query.from,
+            ShippingQuery(query) => &query.from,
+            PreCheckoutQuery(query) => &query.from,
+            PollAnswer(answer) => &answer.user,
+
+            MyChatMember(m) | ChatMember(m) => &m.from,
+            ChatJoinRequest(r) => &r.from,
+
+            Poll(_) | Error(_) => return None,
+        };
+
+        Some(from)
+    }
+
+    /// Returns all users that are "contained" in this `Update` structure.
+    ///
+    /// This might be useful to track information about users.
+    ///
+    /// Note that this function may return quite a few users as it scans
+    /// replies, pinned messages, message entities, "via bot" fields and more.
+    /// Also note that this function can return duplicate users.
+    pub fn mentioned_users(&self) -> impl Iterator<Item = &User> {
+        use either::Either::{Left as L, Right as R};
+        use std::iter::{empty, once};
+
+        //          [root]
+        //         /      \
+        // left - /        \ - right
+        //       /          \
+        //      /\          /\
+        //     /  \        /  \
+        //    /    \      /    \
+        //   0     /\    /\    /\
+        //        /  \  /  \  /  \
+        //       1    2 3  4  5  6
+        //
+        // 0 = LL
+        // 1 = LRL
+        // 2 = LRR
+        // 3 = RLL
+        // 4 = RLR
+        // 5 = RRL
+        // 6 = RRR
+
+        let i0 = |x| L(L(x));
+        let i1 = |x| L(R(L(x)));
+        let i2 = |x| L(R(R(x)));
+        let i3 = |x| R(L(L(x)));
+        let i4 = |x| R(L(R(x)));
+        let i5 = |x| R(R(L(x)));
+        let i6 = |x| R(R(R(x)));
+
+        match &self.kind {
+            UpdateKind::Message(message)
+            | UpdateKind::EditedMessage(message)
+            | UpdateKind::ChannelPost(message)
+            | UpdateKind::EditedChannelPost(message) => i0(message.mentioned_users()),
+
+            UpdateKind::InlineQuery(query) => i1(once(&query.from)),
+            UpdateKind::ChosenInlineResult(query) => i1(once(&query.from)),
+            UpdateKind::CallbackQuery(query) => i2(query.mentioned_users()),
+            UpdateKind::ShippingQuery(query) => i1(once(&query.from)),
+            UpdateKind::PreCheckoutQuery(query) => i1(once(&query.from)),
+            UpdateKind::Poll(poll) => i3(poll.mentioned_users()),
+
+            UpdateKind::PollAnswer(answer) => i1(once(&answer.user)),
+
+            UpdateKind::MyChatMember(member) | UpdateKind::ChatMember(member) => {
+                i4(member.mentioned_users())
+            }
+            UpdateKind::ChatJoinRequest(request) => i5(request.mentioned_users()),
+            UpdateKind::Error(_) => i6(empty()),
+        }
+    }
+
+    /// Returns the chat in which is update has happened, if any.
+    #[must_use]
+    pub fn chat(&self) -> Option<&Chat> {
+        use UpdateKind::*;
+
+        let chat = match &self.kind {
+            Message(m) | EditedMessage(m) | ChannelPost(m) | EditedChannelPost(m) => &m.chat,
+            CallbackQuery(q) => &q.message.as_ref()?.chat,
+            ChatMember(m) => &m.chat,
+            MyChatMember(m) => &m.chat,
+            ChatJoinRequest(c) => &c.chat,
+
+            InlineQuery(_)
+            | ChosenInlineResult(_)
+            | ShippingQuery(_)
+            | PreCheckoutQuery(_)
+            | Poll(_)
+            | PollAnswer(_)
+            | Error(_) => return None,
+        };
+
+        Some(chat)
+    }
+
+    #[deprecated(note = "renamed to `from`", since = "0.10.0")]
+    pub fn user(&self) -> Option<&User> {
+        self.from()
+    }
+}
+
+impl UpdateId {
+    /// Returns the offset for the **next** update that can be used for polling.
+    ///
+    /// I.e. `self.0 + 1`.
+    #[must_use]
+    pub fn as_offset(self) -> i32 {
+        debug_assert!(self.0 < i32::MAX as u32);
+
+        self.0 as i32 + 1
+    }
 }
 
 impl<'de> Deserialize<'de> for UpdateKind {
@@ -346,7 +386,7 @@ fn empty_error() -> UpdateKind {
 mod test {
     use crate::types::{
         Chat, ChatId, ChatKind, ChatPrivate, MediaKind, MediaText, Message, MessageCommon,
-        MessageId, MessageKind, Update, UpdateKind, User, UserId,
+        MessageId, MessageKind, Update, UpdateId, UpdateKind, User, UserId,
     };
 
     use chrono::{DateTime, NaiveDateTime, Utc};
@@ -355,8 +395,10 @@ mod test {
     #[test]
     fn message() {
         let timestamp = 1_569_518_342;
-        let date =
-            DateTime::from_utc(NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap(), Utc);
+        let date = DateTime::from_naive_utc_and_offset(
+            NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap(),
+            Utc,
+        );
 
         let json = r#"{
             "update_id":892252934,
@@ -381,7 +423,7 @@ mod test {
         }"#;
 
         let expected = Update {
-            id: 892_252_934,
+            id: UpdateId(892_252_934),
             kind: UpdateKind::Message(Message {
                 via_bot: None,
                 id: MessageId(6557),

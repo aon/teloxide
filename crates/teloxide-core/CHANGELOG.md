@@ -13,14 +13,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `mentioned_users` functions for `CallbackQuery`, `Chat`, `ChatJoinRequest`, `ChatMemberUpdated`, `Game`, `Message`, `Poll`, `Update` which return all contained `User` instances ([#850][pr850])
 - `Message::video_chat_participants_invited` ([#850][pr850])
 - `Update::from`, a replacement for `Update::user` ([#850][pr850])
+- `Seconds` type, which represents a duration is seconds ([#859][pr859])
+- `VideoChatEnded::duration` field that was previously missed ([#859][pr859])
+- `ThreadId` newtype over `MessageId`, used for identifying reply threads ([#887][pr887])
+- `ChatId::as_user` ([#905][pr905])
+- Implement `PartialEq<ChatId> for UserId` and `PartialEq<UserId> for ChatId` ([#905][pr905])
+- `ChatId::{MIN, MAX}` ([#905][pr905])
 
 [pr851]: https://github.com/teloxide/teloxide/pull/851
+[pr887]: https://github.com/teloxide/teloxide/pull/887
+[pr905]: https://github.com/teloxide/teloxide/pull/905
+
+### Fixed
+
+- Return types of `edit_message_live_location_inline`, `stop_message_live_location_inline`, and `set_game_score_inline`: `Message` => `True` ([#854][pr854])
+- Remove `latitude` and `longitude` parameters from `stop_message_live_location` and `stop_message_live_location_inline` ([#854][pr854])
+- Fix the type of `photo_size`,`photo_width` and `photo_height` in the `send_invoice` method ([#936][pr936])
+
+[pr854]: https://github.com/teloxide/teloxide/pull/854
+[pr936]: https://github.com/teloxide/teloxide/pull/936
+
+### Changed
+
+- Types of `Option<bool>` fields of `KeyboardMarkup`, `KeyboardRemove` and `ForceReply` to `bool` ([#853][pr853])
+- Type of `KeyboardMarkup::input_field_placeholder`: `Option<String>` => `String` ([#853][pr853])
+- The following fields now use `Seconds` type instead of `u32`, `u16` or `Duration` ([#859][pr859])
+  - `Animation::duration`
+  - `Audio::duration`
+  - `Chat::message_auto_delete_time`
+  - `Chat::slow_mode_delay`
+  - `InlineQueryResultLocation::live_period`
+  - `Location::live_period`
+  - `MessageAutoDeleteTimerChanged::message_auto_delete_time`
+  - `Poll::open_period` 
+  - `Video::duration`
+  - `VideoNote::duration`
+  - `Voice::duration`
+- `RequestError::MigrateToChatId` single fields type to `ChatId` ([#859][pr859])
+- `RequestError::RetryAfter` single fields type to `Seconds` ([#859][pr859])
+- `CallbackGame`, `ForumTopicClosed`, `ForumTopicReopened`, `GeneralForumTopicHidden`, `GeneralForumTopicUnhidden` and `WriteAccessAllowed` structures
+  are now defined as named (`struct S {}`) instead of unit (`struct S;`) in order to fix their deserialization ([#876][pr876])
+- `Download` now uses GAT feature on the `Fut` and `Err` associated types, instead of a lifetime on the whole trait ([#885][pr885])
+- MSRV (Minimal Supported Rust Version) was bumped from `1.64.0` to `1.65.0`
+- Renamed `ForumTopic::message_thread_id` into `thread_id` ([#887][pr887])
+- `ForumTopic::thread_id` and `Message::thread_id` now use `ThreadId` instead of `i32` ([#887][pr887])
+- `message_thread_id` method parameters now use `ThreadId` instead of `i32` ([#887][pr887])
+- `DiceEmoji` variant order ([#887][pr887])
+- `Dice::value` now use `u8`, instead of `i32` ([#887][pr887])
+- `Invoice::total_amount`, `LabeledPrice::amount`, `PreCheckoutQuery::total_amount`, `SuccessfulPayment::total_amout` now use `u32`, instead of `i32` ([#887][pr887])
+- `Forward::message_id` and `Message::forward_from_message_id` now use `MessageId` instead of `i32` ([#887][pr887])
+- `Poll::total_voter_count` and `PollOption::voter_count` now use `u32` instead of `i32` ([#887][pr887])
+- `PollAnswer::option_ids` now use `u8` instead of `i32` ([#887][pr887])
+- Use `u32` for sizes and `Seconds` for timespans in `InlineQueryResult*` ([#887][pr887])
+- `SendGame::reply_to_message_id`, `SendSticker::reply_to_message_id` and `SendInvoice::reply_to_message_id` now use `MessageId` instead of `i32` ([#887][pr887])
+- Use `UpdateId` for `Update::id` ([#892][pr892])
+
+[pr852]: https://github.com/teloxide/teloxide/pull/853
+[pr859]: https://github.com/teloxide/teloxide/pull/859
+[pr876]: https://github.com/teloxide/teloxide/pull/876
+[pr885]: https://github.com/teloxide/teloxide/pull/885
+[pr892]: https://github.com/teloxide/teloxide/pull/892
 
 ### Deprecated
 
 - `Update::user`, use `Update::from` instead ([#850][pr850])
 
 [pr850]: https://github.com/teloxide/teloxide/pull/850
+
+### Fixed
+
+- Deserialization of `ApiError::CantParseEntities` ([#839][pr839])
+- Deserialization of empty (content-less) messages that can sometimes appear as a part of callback query ([#850][pr850], issue [#873][issue873])
+
+[pr839]: https://github.com/teloxide/teloxide/pull/839
+[pr879]: https://github.com/teloxide/teloxide/pull/879
+[issue873]: https://github.com/teloxide/teloxide/issues/873
 
 ## 0.9.1 - 2023-02-15
 

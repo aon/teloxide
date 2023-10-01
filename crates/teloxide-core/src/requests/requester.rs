@@ -319,8 +319,6 @@ pub trait Requester {
         &self,
         chat_id: C,
         message_id: MessageId,
-        latitude: f64,
-        longitude: f64,
     ) -> Self::StopMessageLiveLocation
     where
         C: Into<Recipient>;
@@ -334,8 +332,6 @@ pub trait Requester {
     fn stop_message_live_location_inline<I>(
         &self,
         inline_message_id: I,
-        latitude: f64,
-        longitude: f64,
     ) -> Self::StopMessageLiveLocationInline
     where
         I: Into<String>;
@@ -682,28 +678,40 @@ pub trait Requester {
     type EditForumTopic: Request<Payload = EditForumTopic, Err = Self::Err>;
 
     /// For Telegram documentation see [`EditForumTopic`].
-    fn edit_forum_topic<C>(&self, chat_id: C, message_thread_id: i32) -> Self::EditForumTopic
+    fn edit_forum_topic<C>(&self, chat_id: C, message_thread_id: ThreadId) -> Self::EditForumTopic
     where
         C: Into<Recipient>;
 
     type CloseForumTopic: Request<Payload = CloseForumTopic, Err = Self::Err>;
 
     /// For Telegram documentation see [`CloseForumTopic`].
-    fn close_forum_topic<C>(&self, chat_id: C, message_thread_id: i32) -> Self::CloseForumTopic
+    fn close_forum_topic<C>(
+        &self,
+        chat_id: C,
+        message_thread_id: ThreadId,
+    ) -> Self::CloseForumTopic
     where
         C: Into<Recipient>;
 
     type ReopenForumTopic: Request<Payload = ReopenForumTopic, Err = Self::Err>;
 
     /// For Telegram documentation see [`ReopenForumTopic`].
-    fn reopen_forum_topic<C>(&self, chat_id: C, message_thread_id: i32) -> Self::ReopenForumTopic
+    fn reopen_forum_topic<C>(
+        &self,
+        chat_id: C,
+        message_thread_id: ThreadId,
+    ) -> Self::ReopenForumTopic
     where
         C: Into<Recipient>;
 
     type DeleteForumTopic: Request<Payload = DeleteForumTopic, Err = Self::Err>;
 
     /// For Telegram documentation see [`DeleteForumTopic`].
-    fn delete_forum_topic<C>(&self, chat_id: C, message_thread_id: i32) -> Self::DeleteForumTopic
+    fn delete_forum_topic<C>(
+        &self,
+        chat_id: C,
+        message_thread_id: ThreadId,
+    ) -> Self::DeleteForumTopic
     where
         C: Into<Recipient>;
 
@@ -713,7 +721,7 @@ pub trait Requester {
     fn unpin_all_forum_topic_messages<C>(
         &self,
         chat_id: C,
-        message_thread_id: i32,
+        message_thread_id: ThreadId,
     ) -> Self::UnpinAllForumTopicMessages
     where
         C: Into<Recipient>;
@@ -1329,6 +1337,8 @@ where
 // }
 
 #[test]
+// waffle: efficiency is not important here, and I don't want to rewrite this
+#[allow(clippy::format_collect)]
 fn codegen_requester_methods() {
     use crate::codegen::{
         add_hidden_preamble,

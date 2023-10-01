@@ -100,6 +100,7 @@ pub use sticker::*;
 pub use sticker_set::*;
 pub use successful_payment::*;
 pub use target_message::*;
+pub use thread_id::*;
 pub use unit_false::*;
 pub use unit_true::*;
 pub use update::*;
@@ -191,6 +192,7 @@ mod sticker;
 mod sticker_set;
 mod successful_payment;
 mod target_message;
+mod thread_id;
 mod unit_false;
 mod unit_true;
 mod update;
@@ -248,10 +250,12 @@ mod non_telegram_types {
 
 mod chat_id;
 mod recipient;
+mod seconds;
 mod user_id;
 
 pub use chat_id::*;
 pub use recipient::*;
+pub use seconds::*;
 pub use user_id::*;
 
 use serde::Serialize;
@@ -265,7 +269,7 @@ pub(crate) fn serde_timestamp<E: serde::de::Error>(
 
     NaiveDateTime::from_timestamp_opt(timestamp, 0)
         .ok_or_else(|| E::custom("invalid timestump"))
-        .map(|naive| DateTime::from_utc(naive, Utc))
+        .map(|naive| DateTime::from_naive_utc_and_offset(naive, Utc))
 }
 
 pub(crate) mod serde_opt_date_from_unix_timestamp {
@@ -301,15 +305,17 @@ pub(crate) mod serde_opt_date_from_unix_timestamp {
 
         {
             let json = r#"{"date":1}"#;
-            let expected =
-                DateTime::from_utc(chrono::NaiveDateTime::from_timestamp_opt(1, 0).unwrap(), Utc);
+            let expected = DateTime::from_naive_utc_and_offset(
+                chrono::NaiveDateTime::from_timestamp_opt(1, 0).unwrap(),
+                Utc,
+            );
 
             let Struct { date } = serde_json::from_str(json).unwrap();
             assert_eq!(date, Some(expected));
         }
 
         {
-            let json = r#"{}"#;
+            let json = "{}";
 
             let Struct { date } = serde_json::from_str(json).unwrap();
             assert_eq!(date, None);
@@ -382,48 +388,38 @@ pub(crate) mod option_url_from_string {
     }
 }
 
-pub(crate) mod duration_secs {
-    use std::time::Duration;
+pub(crate) mod option_msg_id_as_int {
+    use crate::types::MessageId;
 
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-    pub(crate) fn serialize<S>(this: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn serialize<S>(this: &Option<MessageId>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        this.as_secs().serialize(serializer)
+        this.map(|MessageId(id)| id).serialize(serializer)
     }
 
-    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Option<MessageId>, D::Error>
     where
         D: Deserializer<'de>,
     {
-        u64::deserialize(deserializer).map(Duration::from_secs)
+        Option::<i32>::deserialize(deserializer).map(|r| r.map(MessageId))
     }
 
     #[test]
     fn test() {
         #[derive(Serialize, Deserialize)]
         struct Struct {
-            #[serde(with = "crate::types::duration_secs")]
-            duration: Duration,
+            #[serde(with = "crate::types::option_msg_id_as_int")]
+            id: Option<MessageId>,
         }
 
         {
-            let json = r#"{"duration":0}"#;
-            let duration: Struct = serde_json::from_str(json).unwrap();
-            assert_eq!(duration.duration, Duration::from_secs(0));
-            assert_eq!(serde_json::to_string(&duration).unwrap(), json.to_owned());
-
-            let json = r#"{"duration":12}"#;
-            let duration: Struct = serde_json::from_str(json).unwrap();
-            assert_eq!(duration.duration, Duration::from_secs(12));
-            assert_eq!(serde_json::to_string(&duration).unwrap(), json.to_owned());
-
-            let json = r#"{"duration":1234}"#;
-            let duration: Struct = serde_json::from_str(json).unwrap();
-            assert_eq!(duration.duration, Duration::from_secs(1234));
-            assert_eq!(serde_json::to_string(&duration).unwrap(), json.to_owned());
+            let json = r#"{"id":123}"#;
+            let id: Struct = serde_json::from_str(json).unwrap();
+            assert_eq!(id.id, Some(MessageId(123)));
+            assert_eq!(serde_json::to_string(&id).unwrap(), json.to_owned());
         }
     }
 }

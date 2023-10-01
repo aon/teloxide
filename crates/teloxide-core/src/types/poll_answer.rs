@@ -1,6 +1,7 @@
 use crate::types::User;
 use serde::{Deserialize, Serialize};
 
+#[serde_with_macros::skip_serializing_none]
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct PollAnswer {
     /// Unique poll identifier.
@@ -12,5 +13,5 @@ pub struct PollAnswer {
     /// 0-based identifiers of answer options, chosen by the user.
     ///
     /// May be empty if the user retracted their vote.
-    pub option_ids: Vec<i32>,
+    pub option_ids: Vec<u8>,
 }

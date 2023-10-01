@@ -168,6 +168,67 @@ fn parse_with_split4() {
 
 #[test]
 #[cfg(feature = "macros")]
+fn parse_with_command_separator1() {
+    #[derive(BotCommands, Debug, PartialEq)]
+    #[command(rename_rule = "lowercase")]
+    #[command(parse_with = "split", separator = "|", command_separator = "_")]
+    enum DefaultCommands {
+        Start(u8, String),
+        Help,
+    }
+
+    assert_eq!(
+        DefaultCommands::Start(10, "hello".to_string()),
+        DefaultCommands::parse("/start_10|hello", "").unwrap()
+    );
+}
+
+#[test]
+#[cfg(feature = "macros")]
+fn parse_with_command_separator2() {
+    #[derive(BotCommands, Debug, PartialEq)]
+    #[command(rename_rule = "lowercase")]
+    #[command(parse_with = "split", separator = "_", command_separator = "_")]
+    enum DefaultCommands {
+        Start(u8, String),
+        Help,
+    }
+
+    assert_eq!(
+        DefaultCommands::Start(10, "hello".to_string()),
+        DefaultCommands::parse("/start_10_hello", "").unwrap()
+    );
+}
+
+#[test]
+#[cfg(feature = "macros")]
+fn parse_with_command_separator3() {
+    #[derive(BotCommands, Debug, PartialEq)]
+    #[command(rename_rule = "lowercase")]
+    #[command(parse_with = "split", command_separator = ":")]
+    enum DefaultCommands {
+        Help,
+    }
+
+    assert_eq!(DefaultCommands::Help, DefaultCommands::parse("/help", "").unwrap());
+}
+
+#[test]
+#[cfg(feature = "macros")]
+fn parse_with_command_separator4() {
+    #[derive(BotCommands, Debug, PartialEq)]
+    #[command(rename_rule = "lowercase")]
+    #[command(parse_with = "split", command_separator = ":")]
+    enum DefaultCommands {
+        Start(u8),
+        Help,
+    }
+
+    assert_eq!(DefaultCommands::Start(10), DefaultCommands::parse("/start:10", "").unwrap());
+}
+
+#[test]
+#[cfg(feature = "macros")]
 fn parse_custom_parser() {
     mod parser {
         use teloxide::utils::command::ParseError;
@@ -228,16 +289,66 @@ fn parse_named_fields() {
 
 #[test]
 #[cfg(feature = "macros")]
+#[allow(deprecated)]
 fn descriptions_off() {
     #[derive(BotCommands, Debug, PartialEq)]
     #[command(rename_rule = "lowercase")]
     enum DefaultCommands {
-        #[command(description = "off")]
+        #[command(hide)]
         Start,
+        #[command(description = "off")]
+        Username,
+        /// off
         Help,
     }
 
-    assert_eq!(DefaultCommands::descriptions().to_string(), "/help".to_owned());
+    assert_eq!(DefaultCommands::descriptions().to_string(), "/help — off".to_owned());
+}
+
+#[test]
+#[cfg(feature = "macros")]
+fn description_with_doc_attr() {
+    #[derive(BotCommands, Debug, PartialEq)]
+    #[command(rename_rule = "lowercase")]
+    enum DefaultCommands {
+        /// Start command
+        Start,
+        /// Help command\nwithout replace the `\n`
+        Help,
+        /// Foo command
+        /// with new line
+        Foo,
+    }
+
+    assert_eq!(
+        DefaultCommands::descriptions().to_string(),
+        "/start — Start command\n/help — Help command\\nwithout replace the `\\n`\n/foo — Foo \
+         command\nwith new line"
+    );
+}
+
+#[test]
+#[cfg(feature = "macros")]
+fn description_with_doc_attr_and_command() {
+    #[derive(BotCommands, Debug, PartialEq)]
+    #[command(rename_rule = "lowercase")]
+    enum DefaultCommands {
+        /// Start command
+        #[command(description = "Start command")]
+        Start,
+        #[command(description = "Help command\nwith new line")]
+        Help,
+        /// Foo command
+        /// with new line
+        #[command(description = "Foo command\nwith new line")]
+        Foo,
+    }
+
+    assert_eq!(
+        DefaultCommands::descriptions().to_string(),
+        "/start — Start command\nStart command\n/help — Help command\nwith new line\n/foo — Foo \
+         command\nwith new line\nFoo command\nwith new line"
+    );
 }
 
 #[test]
