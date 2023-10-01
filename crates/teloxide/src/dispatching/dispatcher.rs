@@ -489,7 +489,6 @@ impl<R, Err, Key> Dispatcher<R, Err, Key> {
     }
 }
 
-
 fn spawn_worker<Err>(
     deps: DependencyMap,
     handler: Arc<UpdateHandler<Err>>,
